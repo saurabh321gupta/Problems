@@ -2,6 +2,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.util.*;
@@ -919,7 +920,257 @@ public static void main(String[] args) throws IOException {
         t--;
     }
 }*/
+/*
+6
+        9
+        1 10 3 4 8 10*/
 
+/*//Equal subarrays (Jan circuit 2020 hackerearth) passed
+public static void main(String[] args) throws IOException {
+    BufferedReader bf = new BufferedReader(new InputStreamReader(System.in));
+    int n = Integer.parseInt(bf.readLine());
+    long k = Long.parseLong(bf.readLine());
+    String strNum[] = bf.readLine().split("\\s");
+    long max = Long.parseLong(strNum[0]);
+    long value = k;
+    int length = 1;
+    int maxLength = 1;
+    int i = 0;
+    int j = 1;
+    while (i < n && j < n) {
+        long x = Long.parseLong(strNum[j]);
+        if (x > max) {
+            value = value - (length) * (x - max);
+            max = x;
+        }
+        value = value - (max - x);
+        if (value < 0) {
+            i++;
+            j++;
+            value = value + (max - Long.parseLong(strNum[i - 1]));
+            if (max == Long.parseLong(strNum[i - 1])) {
+                long z = ((j - i) * max) + value - k;
+                max = 0;
+                int o = i;
+                while (o < j & o < n) {
+                    long p = Long.parseLong(strNum[o]);
+                    if (max < p)
+                        max = p;
+                    o++;
+                }
+                value = k - (((j - i) * max) - z);
+            }
+        } else {
+            j++;
+            length++;
+        }
+        if (length > maxLength)
+            maxLength = length;
+    }
+    System.out.println(maxLength);
+}*/
+/*//Distribute chocolates (Jan circuit 2020 hackerearth) passed
+public static void main(String[] args) throws IOException {
+    BufferedReader bf = new BufferedReader(new InputStreamReader(System.in));
+    int t = Integer.parseInt(bf.readLine());
+    mainLoop:
+    while (t > 0) {
+        String strNum[] = bf.readLine().split("\\s");
+        long c = Long.parseLong(strNum[0]);
+        long n = Long.parseLong(strNum[1]);
+        long x = (n * (n + 1)) / 2;
+        if (x > c) {
+            System.out.println(c);
+        } else {
+            System.out.println((c - x) % n);
+        }
+        t--;
+    }
+}*/
+
+/*//Random subsets on a tree (Jan circuit 2020 hackerearth)
+static class Node {
+    Integer value;
+    Integer u;
+    List<Node> nodes = new ArrayList();
+
+    public Node(Integer value, Integer u) {
+        this.value = value;
+        this.u = u;
+    }
+}
+
+    static long totalCombinations = 0;
+
+    public static void main(String[] args) throws IOException {
+
+        BufferedReader bf = new BufferedReader(new InputStreamReader(System.in));
+        int n = Integer.parseInt(bf.readLine());
+        Node[] arr = new Node[n + 1];
+        for (int i = 1; i <= n; i++) {
+            arr[i] = new Node(null, i);
+        }
+        String strNum[];
+        for (int i = 1; i < n; i++) {
+            strNum = bf.readLine().split("\\s");
+            int x = Integer.parseInt(strNum[0]);
+            int y = Integer.parseInt(strNum[1]);
+            arr[x].nodes.add(arr[y]);
+        }
+        strNum = bf.readLine().split("\\s");
+        for (int i = 1; i <= n; i++) {
+            int x = Integer.parseInt(strNum[i - 1]);
+            arr[i].value = x;
+        }
+        long calculatedValue = getValue(arr[1]);
+        long numberOfAllpossibleCombinations = (long)Math.pow(2,n);
+        calculatedValue += numberOfAllpossibleCombinations - 1 - totalCombinations;
+        System.out.println(getAnswer(calculatedValue,numberOfAllpossibleCombinations));
+    }
+
+    private static long getValue(Node node) {
+        int value = 0;
+        if (node.nodes.isEmpty()) {
+            return value;
+        }
+        for (Node x : node.nodes) {
+            value += getValue(x);
+        }
+        int childCount = node.nodes.size();
+        if (childCount == 1) {
+            return value;
+        }
+        long mul = 1;
+        long sum = 0;
+        for (int i = 0; i < childCount; i++) {
+            long x = countChilds(node.nodes.get(i), node.value);
+            long y = (long) Math.pow(2, x);
+            mul *= y;
+            sum += y;
+        }
+        sum -= (childCount - 1);
+        long combinations = (mul - sum);
+        totalCombinations += combinations;
+        long result = (node.u) * combinations;
+        return value+result;
+    }
+
+    public static int countChilds(Node node, int value) {
+        int x = 0;
+        if (value > node.value) {
+            x = 1;
+        }
+        if (node.nodes.isEmpty()) {
+            return x;
+        }
+        for (Node child : node.nodes) {
+            x += countChilds(child, value);
+        }
+        return x;
+    }
+
+    static long getAnswer(Long x, Long y) {
+        Long m = 1000000007L;
+        x = x % m;
+        return (x * (((new BigInteger(y.toString())).modInverse(new BigInteger(m.toString()))).longValue())) % m;
+    }*/
+
+    /*public static void main(String[] args) throws IOException {
+        BufferedReader bf = new BufferedReader(new InputStreamReader(System.in));
+        int t = Integer.parseInt(bf.readLine());
+        mainLoop:
+        while (t > 0) {
+            int n = Integer.parseInt(bf.readLine());
+            String strNum[] = bf.readLine().split("\\s");
+            if (n <= 2) {
+                System.out.println("No");
+                t--;
+                continue mainLoop;
+            }
+            int min = Integer.parseInt(strNum[0]);
+            int max = Integer.parseInt(strNum[1]);
+            for (int i = 2; i < n; i++) {
+                int x = Integer.parseInt(strNum[i]);
+                boolean smallerPresent = false;
+                for (int j = 0; j < i; j++) {
+                    if (smallerPresent) {
+                        if (x < Integer.parseInt(strNum[j])) {
+                            System.out.println("Yes");
+                            t--;
+                            continue mainLoop;
+                        }
+                    } else {
+                        if (x > Integer.parseInt(strNum[j])) {
+                            smallerPresent = true;
+                        }
+                    }
+                }
+            }
+            System.out.println("No");
+            t--;
+        }
+    }
+*/
+   /* public static void main(String[] args) throws IOException {
+        String s1 = "}}}";
+        String s2 = "}}}}";
+        String s3 = "}";
+        String s4 = "}}}}}";
+        s1=s1.replaceAll("}}","a");
+        System.out.println(getOcc(s1));
+        System.out.println(s2.replaceAll("}}","a"));
+        System.out.println(s3.replaceAll("}}","a"));
+        System.out.println(s4.replaceAll("}}","a"));
+
+        System.out.println(getOcc(s1));
+        //BufferedReader bf = new BufferedReader(new InputStreamReader(System.in));
+        //int t = Integer.parseInt(bf.readLine());
+    }
+
+    public static int getOcc(String s){
+        int counter = 0;
+        for( int i=0; i<s.length(); i++ ) {
+            if( s.charAt(i) == '}' ) {
+                counter++;
+            }
+        }
+        return counter;
+    }*/
+
+    public static void main(String[] args) throws IOException {
+        BufferedReader bf = new BufferedReader(new InputStreamReader(System.in));
+        int t = Integer.parseInt(bf.readLine());
+        while (t > 0) {
+            char[] arr = bf.readLine().toCharArray();
+            int n = arr.length;
+            int stackCount = 0;
+            int count = 0;
+            for (int i = 0; i < n; i++) {
+                if (arr[i] == '{') {
+                    stackCount++;
+                } else {
+                    if (i + 1 != n && arr[i + 1] == '}') {
+                        i++;
+                        if (stackCount != 0) {
+                            stackCount--;
+                        } else {
+                            count++;
+                        }
+                    } else {
+                        count++;
+                        if (stackCount != 0) {
+                            stackCount--;
+                        } else {
+                            count++;
+                        }
+                    }
+                }
+            }
+            count += 2 * stackCount;
+            System.out.println(count);
+            t--;
+        }
+    }
 
 }
 
