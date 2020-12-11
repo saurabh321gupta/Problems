@@ -1,3 +1,4 @@
+import java.io.IOException;
 import java.util.*;
 
 public class Test {
@@ -91,4 +92,26 @@ public class Test {
             x.put("adadaw",wqddq);
         }
 }*/
+
+    public static void main(String[] args) throws IOException {
+        Set<Integer> set = new HashSet<>();
+        set.add(1);
+        set.add(2);
+        set.add(3);
+
+        Iterator<Integer> iterator = set.iterator();
+        while(iterator.hasNext()){
+            int x = iterator.next();
+            if(x==2){
+                iterator.remove();
+            }
+
+           for(int y:set)
+                System.out.println("iteration of y : "+ y);
+            System.out.println();
+        }
+
+        System.out.println();
+
+    }
 }

@@ -103,6 +103,14 @@ public class Sudoku {
 				System.out.println("STCUK AT FIFTH LAYER!!!!");
 				for (int i = 0; i < n; i++)
 					System.out.println(Arrays.toString(sudoku[i]));
+				resolvedAtleastOne = resolveSixthLayer();
+				resolveSecondLayer();
+			}
+
+			if (!resolvedAtleastOne) {
+				System.out.println("STCUK AT SIXTH LAYER!!!!");
+				for (int i = 0; i < n; i++)
+					System.out.println(Arrays.toString(sudoku[i]));
 				return;
 			}
 		}
@@ -112,11 +120,55 @@ public class Sudoku {
 
 	}
 
+	private static boolean resolveSixthLayer() {
+		boolean resolved = false;
+		for (int i = 0; i < n; i++) {
+			for (int element : missingElementsInBlocks[i]) {
+				Set<String> places = sudokuPossiblePlacesBlockWise[i][element];
+				Set<Integer> rows = getIndices(places, 0);
+				Set<Integer> cols = getIndices(places, 1);
+
+				if (rows.size() == 1) {
+					resolved = true;
+					int row = rows.iterator().next();
+					if (missingElementsInRows[row].contains(element)) {
+						sudokuPossiblePlacesRowWise[row][element].removeIf(x -> !places.contains(x));
+					}
+
+					int startBlock = (i / blockSize) * blockSize;
+					removeFromAdjacentBlocksRowWise(i, startBlock, new HashSet<>(element), row);
+
+					for (int x = 0; x < n; x++) {
+						if (missingElementsInCols[x].contains(element))
+							sudokuPossiblePlacesColWise[x][element].remove(indicesToString(row, x));
+					}
+				}
+
+				if (cols.size() == 1) {
+					resolved = true;
+					int col = cols.iterator().next();
+					if (missingElementsInCols[col].contains(element)) {
+						sudokuPossiblePlacesColWise[col][element].removeIf(x -> !places.contains(x));
+					}
+					int startBlock = i % blockSize;
+					removeFromAdjacentBlocksColWise(i, startBlock, new HashSet<>(element), col);
+					for (int x = 0; x < n; x++) {
+						if (missingElementsInRows[x].contains(element))
+							sudokuPossiblePlacesRowWise[x][element].remove(indicesToString(x, col));
+					}
+				}
+
+			}
+
+		}
+		return resolved;
+	}
+
 	private static boolean resolveThirdLayer() {
 		boolean resolved = false;
 		for (int i = 0; i < n; i++) {
-			Set<Integer> missingElements = missingElementsInRows[i];
-			List<Integer> elementsToBeRemoved = new ArrayList<>();
+			Set<Integer> missingElements = new HashSet<>(missingElementsInRows[i]);
+
 			for (int element : missingElements) {
 				if (sudokuPossiblePlacesRowWise[i][element] != null
 						&& sudokuPossiblePlacesRowWise[i][element].size() == 1) {
@@ -124,20 +176,11 @@ public class Sudoku {
 					int row = indices[0];
 					int col = indices[1];
 					sudoku[row][col] = element;
-					elementsToBeRemoved.add(element);
-					// missingElementsInRows[row].remove(element);
-					missingElementsInCols[col].remove(element);
-					int blockNumber = indicesToBlockNumber(row, col, blockSize);
-					missingElementsInBlocks[blockNumber].remove(element);
-					sudokuPossiblePlacesBlockWise[blockNumber][element] = null;
-					sudokuPossiblePlacesColWise[col][element] = null;
-					sudokuPossiblePlacesRowWise[row][element] = null;
-					removePossiblePlace(row, col);
+					cleanUpAfterAResolve(row, col, element);
 					unsolved--;
 					resolved = true;
 				}
 			}
-			missingElementsInRows[i].removeAll(elementsToBeRemoved);
 		}
 		return resolved;
 	}
@@ -145,8 +188,7 @@ public class Sudoku {
 	private static boolean resolveFourthLayer() {
 		boolean resolved = false;
 		for (int i = 0; i < n; i++) {
-			Set<Integer> missingElements = missingElementsInCols[i];
-			List<Integer> elementsToBeRemoved = new ArrayList<>();
+			Set<Integer> missingElements = new HashSet<>(missingElementsInCols[i]);
 			for (int element : missingElements) {
 				if (sudokuPossiblePlacesColWise[i][element] != null
 						&& sudokuPossiblePlacesColWise[i][element].size() == 1) {
@@ -154,22 +196,28 @@ public class Sudoku {
 					int row = indices[0];
 					int col = indices[1];
 					sudoku[row][col] = element;
-					elementsToBeRemoved.add(element);
-					missingElementsInRows[row].remove(element);
-					// missingElementsInCols[col].remove(element);
-					int blockNumber = indicesToBlockNumber(row, col, blockSize);
-					missingElementsInBlocks[blockNumber].remove(element);
-					sudokuPossiblePlacesBlockWise[blockNumber][element] = null;
-					sudokuPossiblePlacesRowWise[row][element] = null;
-					sudokuPossiblePlacesColWise[col][element] = null;
-					removePossiblePlace(row, col);
+					cleanUpAfterAResolve(row, col, element);
 					unsolved--;
 					resolved = true;
 				}
 			}
-			missingElementsInCols[i].removeAll(elementsToBeRemoved);
 		}
 		return resolved;
+	}
+
+	public static void cleanUpAfterAResolve(int row, int col, int element) {
+
+		int blockNumber = indicesToBlockNumber(row, col, blockSize);
+
+		missingElementsInRows[row].remove(element);
+		missingElementsInCols[col].remove(element);
+		missingElementsInBlocks[blockNumber].remove(element);
+
+		sudokuPossiblePlacesRowWise[row][element] = null;
+		sudokuPossiblePlacesColWise[col][element] = null;
+		sudokuPossiblePlacesBlockWise[blockNumber][element] = null;
+
+		removePossiblePlace(row, col);
 	}
 
 	private static boolean resolveFifthLayer() {
@@ -188,14 +236,15 @@ public class Sudoku {
 			Map<String, Set<String>> pattern = new LinkedHashMap<>();
 			createPattern(i, 0, new HashSet<>(), 0, "", pattern, missingElementsArray);
 			patterns[i] = pattern;
-			resolve = resolve || resolvePattern(pattern, missingElements, sudokuPossiblePlacesBlockWise[blockNumber]);
+			resolve = resolve || resolvePattern(pattern, missingElements, sudokuPossiblePlacesBlockWise[blockNumber],
+					blockNumber);
 		}
 
 		return resolve;
 	}
 
 	private static boolean resolvePattern(Map<String, Set<String>> pattern, Set<Integer> missingElements,
-			Set<String>[] sudokuPossiblePlaces) {
+			Set<String>[] sudokuPossiblePlaces, int blockNumber) {
 		boolean resolved = false;
 		int missingElementsCount = missingElements.size();
 		if (patternExists(pattern, missingElementsCount)) {
@@ -217,6 +266,16 @@ public class Sudoku {
 							places, numbers);
 					addPatternPlacesToElements(missingElementsInRows[row], sudokuPossiblePlacesRowWise[row], places,
 							numbers);
+
+					int startBlock = (blockNumber / blockSize) * blockSize;
+					removeFromAdjacentBlocksRowWise(blockNumber, startBlock, numbers, row);
+
+					for (int x = 0; x < n; x++) {
+						for (int element : numbers) {
+							if (missingElementsInCols[x].contains(element))
+								sudokuPossiblePlacesColWise[x][element].remove(indicesToString(row, x));
+						}
+					}
 				}
 
 				if (cols.size() == 1) {
@@ -225,6 +284,14 @@ public class Sudoku {
 							places, numbers);
 					addPatternPlacesToElements(missingElementsInCols[col], sudokuPossiblePlacesColWise[col], places,
 							numbers);
+					int startBlock = blockNumber % blockSize;
+					removeFromAdjacentBlocksColWise(blockNumber, startBlock, numbers, col);
+					for (int x = 0; x < n; x++) {
+						for (int element : numbers) {
+							if (missingElementsInRows[x].contains(element))
+								sudokuPossiblePlacesRowWise[x][element].remove(indicesToString(x, col));
+						}
+					}
 				}
 			}
 		}
@@ -332,20 +399,15 @@ public class Sudoku {
 	private static boolean resolveSecondLayer() {
 		boolean resolved = false;
 		for (int i = 0; i < n; i++) {
-			for (int j = 1; j <= n; j++) {
-				if (sudokuPossiblePlacesBlockWise[i][j] != null && sudokuPossiblePlacesBlockWise[i][j].size() == 1) {
-					int[] indices = stringToIndices(sudokuPossiblePlacesBlockWise[i][j].iterator().next());
+			Set<Integer> missingElements = new HashSet<>(missingElementsInBlocks[i]);
+			for (int element : missingElements) {
+				if (sudokuPossiblePlacesBlockWise[i][element] != null
+						&& sudokuPossiblePlacesBlockWise[i][element].size() == 1) {
+					int[] indices = stringToIndices(sudokuPossiblePlacesBlockWise[i][element].iterator().next());
 					int row = indices[0];
 					int col = indices[1];
-					sudoku[row][col] = j;
-					missingElementsInRows[row].remove(j);
-					missingElementsInCols[col].remove(j);
-					int blockNumber = indicesToBlockNumber(row, col, blockSize);
-					missingElementsInBlocks[blockNumber].remove(j);
-					sudokuPossiblePlacesBlockWise[i][j] = null;
-					sudokuPossiblePlacesRowWise[row][j] = null;
-					sudokuPossiblePlacesColWise[col][j] = null;
-					removePossiblePlace(row, col);
+					sudoku[row][col] = element;
+					cleanUpAfterAResolve(row, col, element);
 					unsolved--;
 					resolved = true;
 				}
@@ -438,6 +500,7 @@ public class Sudoku {
 		}
 
 		int[] startIndices = blockNumberToStartIndices(blockNumber, blockSize);
+		int element = sudoku[i][j];
 
 		for (int x = startIndices[0]; x < startIndices[0] + blockSize; x++) {
 			for (int y = startIndices[1]; y < startIndices[1] + blockSize; y++) {
@@ -450,6 +513,75 @@ public class Sudoku {
 					}
 				}
 			}
+		}
+
+		// remove place from every row of that clomun and every column of that row for
+		// this element
+		for (int x = 0; x < n; x++) {
+			// every row of that column
+			if (missingElementsInRows[x].contains(element)) {
+				sudokuPossiblePlacesRowWise[x][element].remove(indicesToString(x, j));
+			}
+
+			// every column of that row
+			if (missingElementsInCols[x].contains(element)) {
+				sudokuPossiblePlacesColWise[x][element].remove(indicesToString(i, x));
+			}
+
+		}
+
+		// remove from adjacent blocks for that element
+		int startBlock = (blockNumber / blockSize) * blockSize;
+		removeFromAdjacentBlocksRowWise(blockNumber, startBlock, new HashSet<>(element), i);
+		int startBlock2 = blockNumber % blockSize;
+		removeFromAdjacentBlocksColWise(blockNumber, startBlock2, new HashSet<>(element), j);
+
+	}
+
+	public static void removeFromAdjacentBlocksRowWise(int blockNumberOfElements, int startBlockNumber,
+			Set<Integer> elements, int row) {
+		for (int i = 0; i < blockSize; i++) {
+			int currentBlock = i + startBlockNumber;
+			if (currentBlock != blockNumberOfElements) {
+				int startIndices[] = blockNumberToStartIndices(currentBlock, blockSize);
+
+				Set<String> places = new HashSet<>();
+				for (int col = 0; col < blockSize; col++) {
+					int currentCol = startIndices[1] + col;
+					String place = indicesToString(row, currentCol);
+					places.add(place);
+				}
+
+				for (int element : elements) {
+					if (missingElementsInBlocks[currentBlock].contains(element)) {
+						sudokuPossiblePlacesBlockWise[currentBlock][element].removeAll(places);
+					}
+				}
+			}
+		}
+	}
+
+	public static void removeFromAdjacentBlocksColWise(int blockNumberOfElements, int startBlockNumber,
+			Set<Integer> elements, int col) {
+		int currentBlock = startBlockNumber;
+		for (int i = 0; i < blockSize; i++) {
+			if (currentBlock != blockNumberOfElements) {
+				int startIndices[] = blockNumberToStartIndices(currentBlock, blockSize);
+
+				Set<String> places = new HashSet<>();
+				for (int row = 0; row < blockSize; row++) {
+					int currentRow = startIndices[0] + row;
+					String place = indicesToString(currentRow, col);
+					places.add(place);
+				}
+
+				for (int element : elements) {
+					if (missingElementsInBlocks[currentBlock].contains(element)) {
+						sudokuPossiblePlacesBlockWise[currentBlock][element].removeAll(places);
+					}
+				}
+			}
+			currentBlock += blockSize;
 		}
 	}
 
