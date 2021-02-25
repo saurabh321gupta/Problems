@@ -1,6 +1,5 @@
 import java.io.IOException;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 public class DQUERY {
     public static void main(String[] args) throws IOException {
